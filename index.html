@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1e7fe4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tareas">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Control de Tareas</title>
+<style>
+:root{--text:#1b2a38;--muted:#5b6b7a;--blue:#1e7fe4;--blue-dark:#1c6fd0;--line:rgba(20,40,60,.22)}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{min-height:100vh;font:14px/1.45 -apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;color:var(--text);
+ background:radial-gradient(circle at 18% 20%,rgba(255,255,255,.85),transparent 22%),radial-gradient(circle at 84% 16%,rgba(255,255,255,.7),transparent 20%),radial-gradient(circle at 70% 88%,rgba(255,255,255,.55),transparent 26%),linear-gradient(150deg,#8ea8bd 0%,#c7d6e2 45%,#7f9bb2 100%);background-attachment:fixed}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.glass{background:rgba(255,255,255,.42);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.75);border-radius:18px;box-shadow:0 10px 30px rgba(20,40,60,.16)}
+input,select,textarea{width:100%;padding:10px 11px;border-radius:10px;border:1px solid var(--line);background:#fff;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,127,228,.15)}
+.help{font-size:11px;color:var(--muted)}
+.muted{color:var(--muted);font-size:12px;margin:2px 0 0}
+
+/* Layout */
+.app{display:grid;grid-template-columns:220px minmax(0,1fr) 290px;gap:16px;padding:16px;min-height:100vh}
+.side{padding:18px 14px;display:flex;flex-direction:column;gap:18px;position:sticky;top:16px;height:calc(100vh - 32px)}
+.main{display:grid;gap:16px;align-content:start;min-width:0}
+.aside-right{display:grid;gap:16px;align-content:start;min-width:0}
+
+/* Sidebar */
+.brand{display:flex;gap:10px;align-items:center}
+.brandmark{width:40px;height:40px;border-radius:12px;background:linear-gradient(145deg,#4aa3f0,#1c6fd0);color:#fff;display:grid;place-items:center;font-size:20px;font-weight:800;box-shadow:0 4px 12px rgba(30,127,228,.4)}
+.brand strong{display:block;font-size:15px}.brand small{color:var(--muted);font-size:11px}
+.nav{display:grid;gap:4px}
+.nav button{display:flex;align-items:center;gap:10px;background:none;border:0;padding:10px 12px;border-radius:12px;text-align:left;width:100%;color:#2c3e50;font-weight:600}
+.nav button.active,.nav button:hover{background:linear-gradient(90deg,#1e7fe4,#4aa3f0);color:#fff;box-shadow:0 4px 12px rgba(30,127,228,.3)}
+.count{margin-left:auto;background:rgba(255,255,255,.75);color:#1c4f85;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700}
+.nav button.active .count{background:rgba(255,255,255,.3);color:#fff}
+.side-foot{margin-top:auto;color:var(--muted);font-size:11px;border-top:1px solid rgba(255,255,255,.6);padding-top:12px}
+
+/* Header */
+.topbar{display:flex;align-items:center;gap:14px;padding:12px 16px;flex-wrap:wrap}
+.head-title{min-width:140px}
+.eyebrow{font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:700;text-transform:uppercase}
+.head-title h1{margin:0;font-size:20px}
+.search{flex:1;min-width:180px;position:relative}
+.search span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#6b7c8c}
+.search input{padding-left:34px;border-radius:12px;background:rgba(255,255,255,.6)}
+.head-actions{display:flex;gap:10px;align-items:center}
+.round{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.5)}
+
+/* Buttons */
+.btn{padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.6);font-weight:650}
+.btn:hover{background:#fff}
+.btn-primary{background:linear-gradient(145deg,#3f9bf0,#1c6fd0);color:#fff;border-color:#1c6fd0;box-shadow:0 4px 12px rgba(30,127,228,.35)}
+.btn-primary:hover{background:linear-gradient(145deg,#3f9bf0,#1864bd)}
+.btn-danger{color:#c0243c;border-color:#f3b4bd}
+.btn-sm{padding:7px 11px;font-size:12px}
+.alarm-banner{display:none;background:rgba(253,226,226,.9);border:1px solid #f3b4bd;color:#8c1d2c;padding:12px 14px;border-radius:14px;align-items:center;justify-content:space-between;gap:10px}
+.alarm-banner.show{display:flex}
+.alarm-banner strong{display:block}.alarm-banner small{display:block;margin-top:2px}
+
+/* List */
+.list-panel{padding:16px;display:grid;gap:12px;align-content:start}
+.list-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.list-head h2{margin:0;font-size:18px}
+.list-head select{width:auto;min-width:170px;border-radius:99px;padding:7px 12px;background:rgba(255,255,255,.7)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:rgba(255,255,255,.5);border-radius:99px;padding:6px 12px;font-size:12px;font-weight:650}
+.chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.task-list{display:grid;gap:10px}
+.task{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;padding:12px;border-radius:14px;background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.85)}
+.task:hover{background:rgba(255,255,255,.75)}
+.task.overdue{box-shadow:inset 3px 0 0 #e5383b}
+.task.completed{opacity:.6}
+.completed .task-title{text-decoration:line-through}
+.task-check{width:18px;height:18px;margin-top:3px;accent-color:var(--blue)}
+.task-top{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.task-title{font-weight:700;font-size:14px;overflow-wrap:anywhere;cursor:pointer}
+.task-desc{color:var(--muted);font-size:12px;margin-top:2px;overflow-wrap:anywhere}
+.task-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;font-size:12px}
+.due{color:var(--muted);font-weight:600}
+.due.late{color:#c0243c}
+.task-actions{margin-left:auto;display:flex}
+.icon-btn{border:0;background:none;padding:4px 7px;border-radius:8px;font-size:15px;color:#4a5b6b}
+.icon-btn:hover{background:rgba(255,255,255,.8)}
+.empty{padding:28px 10px;text-align:center;color:var(--muted)}
+.empty strong{display:block;color:var(--text);font-size:15px;margin-bottom:4px}
+.footnote{font-size:11px;color:var(--muted)}
+
+/* Pills */
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:99px;padding:3px 9px;font-size:11px;font-weight:700;white-space:nowrap}
+.p-crit{background:#e5383b;color:#fff}.p-high{background:#f59e0b;color:#fff}.p-normal{background:#1e7fe4;color:#fff}.p-low{background:#64748b;color:#fff}
+.s-pending{background:#fbd3da;color:#be1f3a}.s-progress{background:#cde6fc;color:#1a64b0}.s-waiting{background:#fbeeb3;color:#8a6100}.s-done{background:#c5f0d5;color:#16754a}
+
+/* Panels */
+.panel{padding:14px 16px}
+.panel h3{margin:0 0 10px;font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel h3 small{font-weight:500;color:var(--muted);font-size:11px}
+.cal-nav{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600}
+.cal-nav button{background:none;border:0;font-size:16px;padding:0 6px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;font-size:12px}
+.wd{font-weight:700;color:var(--muted);font-size:10px;padding-bottom:4px}
+.day{padding:5px 0;border-radius:50%}
+.day.today{background:var(--blue);color:#fff;font-weight:700}
+.day.has:not(.today){position:relative;font-weight:700}
+.day.has:not(.today)::after{content:"";display:block;width:4px;height:4px;border-radius:50%;background:var(--blue);margin:1px auto 0}
+.sum{display:flex;gap:14px;align-items:center}
+.sum-list{flex:1;display:grid;gap:7px;min-width:0}
+.sum-row{display:flex;justify-content:space-between;font-size:13px}
+.sum-row span{display:flex;gap:8px;align-items:center}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:0 0 9px}
+.donut{--p:0;width:84px;height:84px;border-radius:50%;background:conic-gradient(var(--blue) calc(var(--p) * 1%),rgba(20,40,60,.14) 0);display:grid;place-items:center;flex:0 0 84px}
+.donut span{width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.9);display:grid;place-items:center;text-align:center;font-size:11px;font-weight:700;line-height:1.1}
+.donut span b{font-size:15px}
+.reminder{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(20,40,60,.1)}
+.reminder:last-child{border-bottom:0}
+.rem-bar{width:4px;border-radius:4px;flex:0 0 4px}
+.reminder-title{font-weight:650;font-size:13px;overflow-wrap:anywhere}
+.reminder-time{font-size:11px;color:var(--muted);margin-top:2px}
+.cat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;gap:8px}
+.cat-row span{display:flex;gap:8px;align-items:center;min-width:0}
+.cat-count{font-weight:700;color:var(--muted);font-size:12px}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.quick button{background:none;border:0;font-size:11px;font-weight:650;display:grid;gap:6px;justify-items:center;padding:4px 0}
+.qi{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:20px;background:linear-gradient(145deg,#4aa3f0,#1c6fd0);color:#fff;box-shadow:0 4px 12px rgba(30,127,228,.35)}
+.qi.alt{background:rgba(255,255,255,.8);color:#1c4f85;box-shadow:none;border:1px solid var(--line)}
+
+/* Modals */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(20,35,50,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:30;padding:20px;align-items:center;justify-content:center}
+.modal-backdrop.show{display:flex}
+.modal{background:rgba(246,249,252,.97);width:min(620px,100%);max-height:92vh;display:flex;flex-direction:column;border-radius:18px;overflow:hidden;box-shadow:0 24px 70px rgba(10,20,30,.35)}
+.modal-head{padding:16px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(20,40,60,.12)}
+.modal-head h2{margin:0;font-size:17px}
+.modal-content{padding:16px 18px;overflow:auto;flex:1}
+.modal-foot{padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid rgba(20,40,60,.12)}
+.modal-foot-right{display:flex;gap:8px;margin-left:auto}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-field{display:grid;gap:5px}
+.form-field.full{grid-column:1/-1}
+.form-field label{font-size:12px;font-weight:700;color:#344054}
+.form-field textarea{min-height:80px;resize:vertical}
+.tpl-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.tpl-row .chip{background:#fff}
+.note-list{display:grid;gap:8px;margin-top:10px}
+.note-item{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px}
+.note-item small{color:var(--muted)}
+.note-item p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.category-manager{display:grid;gap:8px}
+.category-edit{display:flex;align-items:center;gap:8px}
+.category-edit input{flex:1;min-width:0}
+.toast{position:fixed;right:20px;bottom:20px;background:#101828;color:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 10px 30px rgba(16,24,40,.3);z-index:40;max-width:min(380px,calc(100vw - 40px));display:none}
+.toast.show{display:block}
+
+/* Bottom nav (teléfono) */
+.bottom-nav{display:none;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));padding:6px;justify-content:space-around;gap:4px;z-index:10}
+.bottom-nav button{background:none;border:0;display:grid;justify-items:center;gap:2px;font-size:10px;font-weight:650;padding:6px 2px;border-radius:12px;flex:1;color:#2c3e50;min-width:0}
+.bottom-nav button.active{color:#1c6fd0;background:rgba(255,255,255,.85)}
+.bn-i{font-size:18px;line-height:1}
+
+@media(max-width:1180px){.app{grid-template-columns:200px minmax(0,1fr)}.aside-right{grid-column:2}}
+@media(max-width:760px){
+ .app{display:flex;flex-direction:column;padding:10px 10px calc(100px + env(safe-area-inset-bottom,0px))}
+ .side{display:none}
+ .bottom-nav{display:flex}
+ .topbar{padding:12px}
+ .head-title{min-width:0;flex:1}
+ .head-actions .btn-primary{padding:9px 12px}
+ .search{order:3;flex:1 1 100%}
+ .quick{grid-template-columns:repeat(2,1fr)}
+ .form-grid{grid-template-columns:1fr}
+ .form-field.full{grid-column:auto}
+ .modal-backdrop{align-items:flex-end;padding:0}
+ .modal{width:100%;border-radius:18px 18px 0 0;max-height:94vh}
+ .toast{left:10px;right:10px;bottom:96px;max-width:none}
+}
+.ic-card{padding:14px 16px;display:grid;gap:10px}
+.ic-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.ic-head h2{margin:0;font-size:18px}
+.ic-row{display:flex;gap:8px}
+.ic-input{flex:1;min-width:0;font-size:22px;font-weight:700;text-align:center;letter-spacing:.02em}
+.ic-row .btn{white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="side glass">
+    <div class="brand"><div class="brandmark">✓</div><div><strong>Control de Tareas</strong><small>Organiza · Enfócate · Logra</small></div></div>
+    <nav class="nav">
+      <button class="active" data-view="all">▦ Tareas <span class="count" data-count="all">0</span></button>
+      <button data-view="today">◷ Para hoy <span class="count" data-count="today">0</span></button>
+      <button data-view="overdue">⚑ Vencidas <span class="count" data-count="overdue">0</span></button>
+      <button data-view="pending">☷ Pendientes</button>
+      <button data-view="done">✓ Terminadas</button>
+      <button data-action="categories">◉ Categorías</button>
+      <button data-action="backup">⇧ Respaldo</button>
+    </nav>
+    <div class="side-foot"><span id="saveStatus">● Guardado en este equipo</span></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar glass">
+      <div class="head-title"><div class="eyebrow" id="todayLabel"></div><h1 id="pageTitle">Tareas</h1></div>
+      <div class="search"><span>⌕</span><input id="searchInput" placeholder="Buscar tareas..." aria-label="Buscar tareas"></div>
+      <div class="head-actions">
+        <button class="round" id="soundToggle" title="Activar o desactivar sonido" aria-label="Sonido">🔔</button>
+        <button class="btn btn-primary" data-action="new">＋ Nueva tarea</button>
+      </div>
+    </header>
+    <section class="glass ic-card">
+      <div class="ic-head"><h2>IC’S</h2><span class="help">Número con separador de miles</span></div>
+      <form id="icForm" class="ic-row">
+        <input id="icNumber" class="ic-input" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="Número IC’S">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+      </form>
+    </section>
+
+    <div class="alarm-banner" id="alarmBanner"><div><strong>🔔 Tienes un recordatorio</strong><small id="alarmText">Una tarea necesita tu atención.</small></div><button class="btn btn-sm" id="dismissAlarm">Cerrar</button></div>
+
+    <section class="list-panel glass">
+      <div class="list-head">
+        <div><h2 id="listHeading">Todas las tareas</h2><p class="muted" id="pageSubtitle">Ordenadas por prioridad y fecha.</p></div>
+        <select id="categoryFilter" aria-label="Filtrar por categoría"><option value="">Todas las categorías</option></select>
+      </div>
+      <div class="chips" id="priorityFilters">
+        <button class="chip active" data-priority="">Todas</button>
+        <button class="chip" data-priority="Crítica">Crítica</button>
+        <button class="chip" data-priority="Alta">Alta</button>
+        <button class="chip" data-priority="Normal">Normal</button>
+        <button class="chip" data-priority="Baja">Baja</button>
+        <button class="chip" id="clearFilters">Limpiar</button>
+      </div>
+      <div class="task-list" id="taskList"></div>
+      <div class="footnote">Marca la casilla para terminar una tarea. Toca el título para editarla.</div>
+    </section>
+  </main>
+
+  <aside class="aside-right">
+    <section class="panel glass">
+      <h3><span id="calTitle"></span><span class="cal-nav"><button data-cal="-1" aria-label="Mes anterior">‹</button><button data-cal="1" aria-label="Mes siguiente">›</button></span></h3>
+      <div class="cal" id="calGrid"></div>
+    </section>
+
+    <section class="panel glass">
+      <h3>Resumen <small>tareas activas</small></h3>
+      <div class="sum">
+        <div class="sum-list" id="summaryList"></div>
+        <div class="donut" id="donut"><span><b id="donutPct">0%</b>completadas</span></div>
+      </div>
+    </section>
+
+    <section class="panel glass">
+      <h3>Próximos recordatorios</h3>
+      <div id="reminderList"></div>
+    </section>
+
+    <section class="panel glass">
+      <h3>Acciones rápidas</h3>
+      <div class="quick">
+        <button data-action="new"><span class="qi">＋</span>Nueva tarea</button>
+        <button data-action="export"><span class="qi">⇩</span>Exportar</button>
+        <button data-action="import"><span class="qi">⇧</span>Importar</button>
+      </div>
+    </section>
+
+    <section class="panel glass">
+      <h3>Categorías <button class="btn btn-sm" id="manageCategories">Administrar</button></h3>
+      <div id="categorySummary"></div>
+    </section>
+  </aside>
+</div>
+
+<nav class="bottom-nav glass" id="bottomNav">
+  <button class="active" data-view="all"><span class="bn-i">☷</span>Tareas</button>
+  <button data-view="today"><span class="bn-i">◷</span>Hoy</button>
+  <button data-view="overdue"><span class="bn-i">⚑</span>Vencidas</button>
+  <button data-view="done"><span class="bn-i">✓</span>Listas</button>
+  <button data-action="categories"><span class="bn-i">◉</span>Categorías</button>
+</nav>
+
+<div class="toast" id="toast" role="status"></div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+
+<div class="modal-backdrop" id="taskModal" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle">
+ <div class="modal">
+  <div class="modal-head"><h2 id="taskModalTitle">Nueva tarea</h2><button class="icon-btn" data-close="taskModal" aria-label="Cerrar">✕</button></div>
+  <form id="taskForm">
+   <div class="modal-content"><input type="hidden" id="taskId">
+    <div class="form-grid">
+     <div class="form-field full"><label for="taskTitle">Nombre de la tarea *</label><input id="taskTitle" maxlength="160" required placeholder="Ej. Revisar reporte de producción"></div>
+     <div class="form-field full"><label for="taskDescription">Descripción</label><textarea id="taskDescription" maxlength="3000" placeholder="¿Qué necesitas hacer? Agrega detalles o pasos…"></textarea></div>
+     <div class="form-field"><label for="taskPriority">Prioridad</label><select id="taskPriority"><option>Crítica</option><option>Alta</option><option selected>Normal</option><option>Baja</option></select></div>
+     <div class="form-field"><label for="taskStatus">Estatus</label><select id="taskStatus"><option>Pendiente</option><option>En proceso</option><option>En espera</option><option>Terminada</option></select></div>
+     <div class="form-field"><label for="taskCategory">Categoría</label><select id="taskCategory"></select></div>
+     <div class="form-field"><label for="taskRepeat">Repetición</label><select id="taskRepeat"><option value="none">No repetir</option><option value="daily">Diaria</option><option value="weekly">Semanal</option><option value="monthly">Mensual</option></select></div>
+     <div class="form-field"><label for="taskDue">Fecha y hora límite</label><input id="taskDue" type="datetime-local"></div>
+     <div class="form-field"><label for="taskReminder">Recordatorio</label><input id="taskReminder" type="datetime-local"><span class="help">La app avisa si está abierta en este navegador.</span></div>
+     <div class="form-field full"><label for="taskNotes">Notas iniciales</label><textarea id="taskNotes" maxlength="3000" placeholder="Acuerdos, observaciones o información importante…"></textarea></div>
+    </div>
+    <div id="existingNotesWrap" style="display:none;margin-top:16px"><label style="font-size:12px;font-weight:700">Bitácora de notas</label><div class="note-list" id="existingNotes"></div><div style="display:flex;gap:8px;margin-top:10px"><input id="newNote" placeholder="Agregar una nota al historial…"><button type="button" class="btn btn-sm" id="addNoteBtn">Agregar</button></div></div>
+   </div>
+   <div class="modal-foot">
+     <button type="button" class="btn btn-danger" id="deleteTaskBtn" style="display:none">Eliminar</button>
+     <div class="modal-foot-right"><button type="button" class="btn" data-close="taskModal">Cancelar</button><button type="submit" class="btn btn-primary">Guardar</button></div>
+   </div>
+  </form>
+ </div>
+</div>
+
+<div class="modal-backdrop" id="categoryModal" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle">
+ <div class="modal">
+  <div class="modal-head"><h2 id="categoryModalTitle">Administrar categorías</h2><button class="icon-btn" data-close="categoryModal" aria-label="Cerrar">✕</button></div>
+  <div class="modal-content">
+   <p class="muted" style="margin:0 0 14px">Las categorías usadas por tareas no se pueden eliminar.</p>
+   <div class="category-manager" id="categoryManager"></div>
+   <div style="display:flex;gap:8px;margin-top:14px"><input id="newCategoryName" maxlength="40" placeholder="Nombre de la categoría"><button class="btn btn-primary" id="addCategoryBtn">＋ Agregar</button></div>
+  </div>
+  <div class="modal-foot"><span class="help">Se guardan en este navegador.</span><div class="modal-foot-right"><button class="btn" data-close="categoryModal">Listo</button></div></div>
+ </div>
+</div>
+
+<div class="modal-backdrop" id="backupModal" role="dialog" aria-modal="true" aria-labelledby="backupModalTitle">
+ <div class="modal">
+  <div class="modal-head"><h2 id="backupModalTitle">Respaldo de datos</h2><button class="icon-btn" data-close="backupModal" aria-label="Cerrar">✕</button></div>
+  <div class="modal-content">
+   <p>Exporta tus tareas y categorías a un archivo JSON para guardarlo o recuperarlo después.</p>
+   <div style="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0"><button class="btn btn-primary" data-action="export">⇩ Descargar respaldo</button><button class="btn" data-action="import">⇧ Importar respaldo</button></div>
+   <div class="glass" style="padding:12px"><strong>Datos guardados en este equipo</strong><p class="muted" id="backupStats"></p></div>
+   <p class="help" style="margin-top:12px">Importar reemplaza los datos actuales. Exporta primero si quieres conservar una copia.</p>
+  </div>
+  <div class="modal-foot"><span class="help">Privado en este navegador.</span><div class="modal-foot-right"><button class="btn" data-close="backupModal">Cerrar</button></div></div>
+ </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const KEY='controlTareasPro.v1';
+const DEFAULT_CATEGORIES=['Producción','Mantenimiento','Administrativo','Seguimiento','Personal'];
+const PRIORITY_ORDER={'Crítica':0,'Alta':1,'Normal':2,'Baja':3};
+const PRIORITY_CLASS={'Crítica':'p-crit','Alta':'p-high','Normal':'p-normal','Baja':'p-low'};
+const PRIORITY_COLOR={'Crítica':'#e5383b','Alta':'#f59e0b','Normal':'#1e7fe4','Baja':'#64748b'};
+const PRIORITY_ICON={'Crítica':'⚠','Alta':'↑','Normal':'◇','Baja':'⌃'};
+const STATUS_CLASS={'Pendiente':'s-pending','En proceso':'s-progress','En espera':'s-waiting','Terminada':'s-done'};
+const CAT_COLORS=[['#cfe9fb','#1d5f96'],['#dcd6fb','#5440b5'],['#c9f0dc','#1b7a4c'],['#c4eff0','#0f6b70'],['#fbd5e8','#a0306a'],['#fde9b0','#8a6100'],['#e4e8ee','#4a5664']];
+const TEMPLATES={ics:{title:'IC’S',description:'',priority:'Normal',status:'Pendiente',category:'Producción'}};
+const WEEKDAYS=['Lu','Ma','Mi','Ju','Vi','Sá','Do'];
+let tasks=[],categories=[...DEFAULT_CATEGORIES],currentView='all',activePriority='',editingId=null,soundEnabled=true,notified=new Set(),audioCtx=null,toastTimer=null,calOffset=0;
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>('t'+Date.now().toString(36)+Math.random().toString(36).slice(2,8));
+const dateKey=v=>{if(!v)return '';const d=new Date(v);if(Number.isNaN(d.getTime()))return '';return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const todayKey=()=>dateKey(new Date());
+const shortDate=v=>{if(!v)return '';const d=new Date(v);if(Number.isNaN(d.getTime()))return '';return new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(d)};
+const timeOnly=v=>new Date(v).toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit'});
+function dueLabel(v){if(!v)return 'Sin fecha límite';const k=dateKey(v);const tom=new Date();tom.setDate(tom.getDate()+1);if(k===todayKey())return 'Hoy · '+timeOnly(v);if(k===dateKey(tom))return 'Mañana · '+timeOnly(v);return shortDate(v);}
+const isDone=t=>t.status==='Terminada';
+const isOverdue=t=>!isDone(t)&&t.due&&new Date(t.due).getTime()<Date.now();
+const isToday=t=>!isDone(t)&&t.due&&dateKey(t.due)===todayKey();
+const catColor=name=>{const i=Math.max(0,categories.indexOf(name));return CAT_COLORS[i%CAT_COLORS.length];};
+
+function toast(msg){const el=$('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3000);}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({version:1,tasks,categories}));$('saveStatus').textContent='● Guardado en este equipo';}catch(e){$('saveStatus').textContent='⚠ No se pudo guardar';toast('No se pudo guardar. Exporta un respaldo.');}}
+function normalizeTask(t){return {id:String(t.id||uid()),title:String(t.title||'Tarea sin título'),description:String(t.description||''),priority:PRIORITY_ORDER[t.priority]!==undefined?t.priority:'Normal',status:STATUS_CLASS[t.status]?t.status:'Pendiente',category:String(t.category||'Sin categoría'),due:t.due||'',reminder:t.reminder||'',repeat:['none','daily','weekly','monthly'].includes(t.repeat)?t.repeat:'none',createdAt:t.createdAt||new Date().toISOString(),completedAt:t.completedAt||'',notes:Array.isArray(t.notes)?t.notes.filter(n=>n&&n.text).map(n=>({text:String(n.text),at:n.at||new Date().toISOString()})):[],reminderDone:t.reminderDone||''};}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||'{}');if(Array.isArray(d.tasks))tasks=d.tasks.map(normalizeTask);if(Array.isArray(d.categories)&&d.categories.length)categories=[...new Set(d.categories.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()))];}catch(e){tasks=[];categories=[...DEFAULT_CATEGORIES];}}
+
+function statusCounts(){const active=tasks.filter(t=>!isDone(t));return {pending:active.length,today:active.filter(isToday).length,overdue:active.filter(isOverdue).length,done:tasks.filter(isDone).length};}
+function updateNav(){const c=statusCounts();document.querySelectorAll('[data-count]').forEach(el=>{const k=el.dataset.count;el.textContent=k==='all'?c.pending:k==='today'?c.today:c.overdue;});}
+function setView(v){currentView=v;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));const titles={all:['Tareas','Ordenadas por prioridad y fecha.','Todas las tareas'],today:['Para hoy','Tareas con fecha límite de hoy.','Tareas para hoy'],overdue:['Vencidas','Lo que necesita atención cuanto antes.','Tareas vencidas'],pending:['Pendientes','Tareas que aún no están terminadas.','Tareas pendientes'],done:['Terminadas','Tu trabajo completado.','Tareas terminadas']};const x=titles[v]||titles.all;$('pageTitle').textContent=x[0];$('pageSubtitle').textContent=x[1];$('listHeading').textContent=x[2];render();window.scrollTo({top:0,behavior:'smooth'});}
+function sortTasks(arr){return [...arr].sort((a,b)=>{if(isDone(a)!==isDone(b))return isDone(a)?1:-1;const p=PRIORITY_ORDER[a.priority]-PRIORITY_ORDER[b.priority];if(p)return p;if(a.due&&b.due)return new Date(a.due)-new Date(b.due);if(a.due)return -1;if(b.due)return 1;return new Date(b.createdAt)-new Date(a.createdAt);});}
+function getVisibleTasks(){const q=$('searchInput').value.trim().toLocaleLowerCase('es-MX'),cat=$('categoryFilter').value;return sortTasks(tasks.filter(t=>{if(currentView==='today'&&!isToday(t))return false;if(currentView==='overdue'&&!isOverdue(t))return false;if(currentView==='pending'&&isDone(t))return false;if(currentView==='done'&&!isDone(t))return false;if(activePriority&&t.priority!==activePriority)return false;if(cat&&t.category!==cat)return false;if(q&&!`${t.title} ${t.description} ${t.category} ${t.notes.map(n=>n.text).join(' ')}`.toLocaleLowerCase('es-MX').includes(q))return false;return true;}));}
+
+function renderTask(t){const done=isDone(t),late=isOverdue(t),c=catColor(t.category),n=t.notes.length;return `<article class="task ${late?'overdue':''} ${done?'completed':''}">
+<input class="task-check" type="checkbox" ${done?'checked':''} aria-label="Marcar terminada" data-complete="${esc(t.id)}">
+<div style="min-width:0">
+ <div class="task-top"><span class="pill ${PRIORITY_CLASS[t.priority]}">${PRIORITY_ICON[t.priority]} ${esc(t.priority)}</span><span class="pill ${STATUS_CLASS[t.status]}">${esc(t.status)}</span></div>
+ <div class="task-title" data-edit="${esc(t.id)}">${esc(t.title)}</div>
+ ${t.description?`<div class="task-desc">${esc(t.description.slice(0,160))}${t.description.length>160?'…':''}</div>`:''}
+ <div class="task-foot">
+  <span class="pill" style="background:${c[0]};color:${c[1]}">${esc(t.category)}</span>
+  <span class="due ${late?'late':''}">◷ ${late?'Vencida · ':''}${esc(dueLabel(t.due))}</span>
+  ${n?`<span class="due">▤ ${n}</span>`:''}
+  <span class="task-actions"><button class="icon-btn" data-edit="${esc(t.id)}" aria-label="Editar tarea">✎</button><button class="icon-btn" data-delete="${esc(t.id)}" aria-label="Eliminar tarea">×</button></span>
+ </div>
+</div></article>`;}
+
+function render(){updateNav();const list=getVisibleTasks();$('taskList').innerHTML=list.length?list.map(renderTask).join(''):`<div class="empty"><strong>${currentView==='done'?'Aún no hay tareas terminadas':'No hay tareas que mostrar'}</strong>${$('searchInput').value?'Prueba otra búsqueda o limpia los filtros.':'Agrega una tarea o usa la plantilla IC’S.'}<div style="margin-top:12px"><button class="btn btn-primary btn-sm" data-action="new">＋ Nueva tarea</button></div></div>`;renderSummary();renderReminders();renderCategorySummary();renderCalendar();populateCategoryFilters();}
+function renderSummary(){const active=tasks.filter(t=>!isDone(t));$('summaryList').innerHTML=[['Crítica','Críticas'],['Alta','Altas'],['Normal','Normales'],['Baja','Bajas']].map(([p,label])=>`<div class="sum-row"><span><i class="dot" style="background:${PRIORITY_COLOR[p]}"></i>${label}</span><b>${active.filter(t=>t.priority===p).length}</b></div>`).join('');const total=tasks.length,done=tasks.filter(isDone).length,pct=total?Math.round(done/total*100):0;$('donut').style.setProperty('--p',pct);$('donutPct').textContent=pct+'%';}
+function renderReminders(){const upcoming=tasks.filter(t=>!isDone(t)&&t.reminder&&new Date(t.reminder).getTime()>=Date.now()).sort((a,b)=>new Date(a.reminder)-new Date(b.reminder)).slice(0,5);$('reminderList').innerHTML=upcoming.length?upcoming.map(t=>`<div class="reminder"><div class="rem-bar" style="background:${PRIORITY_COLOR[t.priority]}"></div><div style="min-width:0"><div class="reminder-title">${esc(t.title)}</div><div class="reminder-time">${esc(dueLabel(t.reminder))}</div></div></div>`).join(''):`<div class="empty" style="padding:12px 4px"><strong>Todo tranquilo</strong>No tienes recordatorios próximos.</div>`;}
+function renderCategorySummary(){const rows=categories.map(c=>({name:c,count:tasks.filter(t=>t.category===c&&!isDone(t)).length})).filter(x=>x.count>0);$('categorySummary').innerHTML=rows.length?rows.map(c=>`<div class="cat-row"><span><i class="dot" style="background:${catColor(c.name)[1]}"></i>${esc(c.name)}</span><span class="cat-count">${c.count}</span></div>`).join(''):`<div class="empty" style="padding:10px 4px">Tus categorías aparecerán aquí.</div>`;}
+function renderCalendar(){const base=new Date();const first=new Date(base.getFullYear(),base.getMonth()+calOffset,1);const y=first.getFullYear(),m=first.getMonth();const days=new Date(y,m+1,0).getDate();const startDow=(first.getDay()+6)%7;$('calTitle').textContent=new Intl.DateTimeFormat('es-MX',{month:'long',year:'numeric'}).format(first);let html=WEEKDAYS.map(d=>`<span class="wd">${d}</span>`).join('');for(let i=0;i<startDow;i++)html+='<span></span>';const today=todayKey();for(let d=1;d<=days;d++){const key=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const has=tasks.some(t=>!isDone(t)&&dateKey(t.due)===key);html+=`<span class="day ${key===today?'today':''} ${has?'has':''}">${d}</span>`;}$('calGrid').innerHTML=html;}
+function populateCategoryFilters(){const current=$('categoryFilter').value;$('categoryFilter').innerHTML='<option value="">Todas las categorías</option>'+categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');if(categories.includes(current))$('categoryFilter').value=current;}
+function populateTaskCategories(selected){$('taskCategory').innerHTML=categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');if(selected&&categories.includes(selected))$('taskCategory').value=selected;}
+
+function openTask(id=null){editingId=id;const t=id?tasks.find(x=>x.id===id):null;$('taskForm').reset();$('taskId').value=t?.id||'';$('taskModalTitle').textContent=t?'Editar tarea':'Nueva tarea';$('taskTitle').value=t?.title||'';$('taskDescription').value=t?.description||'';$('taskPriority').value=t?.priority||'Normal';$('taskStatus').value=t?.status||'Pendiente';populateTaskCategories(t?.category||categories[0]);$('taskDue').value=t?.due||'';$('taskReminder').value=t?.reminder||'';$('taskRepeat').value=t?.repeat||'none';$('taskNotes').value='';$('newNote').value='';$('existingNotesWrap').style.display=t?'block':'none';$('deleteTaskBtn').style.display=t?'inline-flex':'none';renderNotes(t);$('taskModal').classList.add('show');if(!t)setTimeout(()=>$('taskTitle').focus(),60);}
+function applyTemplate(name){const tp=TEMPLATES[name];if(!tp)return;$('taskTitle').value=tp.title;$('taskDescription').value=tp.description;$('taskPriority').value=tp.priority;$('taskStatus').value=tp.status;if(categories.includes(tp.category))$('taskCategory').value=tp.category;toast('Plantilla IC’S aplicada.');}
+function renderNotes(t){$('existingNotes').innerHTML=(t?.notes||[]).length?t.notes.slice().reverse().map(n=>`<div class="note-item"><small>${esc(shortDate(n.at))}</small><p>${esc(n.text)}</p></div>`).join(''):'<div class="help">Todavía no hay notas.</div>';}
+function closeModal(id){$(id).classList.remove('show');}
+function addNote(){const text=$('newNote').value.trim();if(!text||!editingId)return;const t=tasks.find(x=>x.id===editingId);if(!t)return;t.notes.push({text,at:new Date().toISOString()});$('newNote').value='';save();renderNotes(t);render();toast('Nota agregada.');}
+function saveTask(e){e.preventDefault();const title=$('taskTitle').value.trim();if(!title){$('taskTitle').focus();return;}const id=$('taskId').value||uid();let t=tasks.find(x=>x.id===id);const wasDone=t?.status==='Terminada';const status=$('taskStatus').value;const data={id,title,description:$('taskDescription').value.trim(),priority:$('taskPriority').value,status,category:$('taskCategory').value||'Sin categoría',due:$('taskDue').value,reminder:$('taskReminder').value,repeat:$('taskRepeat').value,createdAt:t?.createdAt||new Date().toISOString(),completedAt:status==='Terminada'?(wasDone?t.completedAt:new Date().toISOString()):'',notes:t?.notes||[],reminderDone:t?.reminderDone||''};const initial=$('taskNotes').value.trim();if(initial)data.notes.push({text:initial,at:new Date().toISOString()});if(t)Object.assign(t,data);else tasks.push(data);save();closeModal('taskModal');render();toast(t?'Tarea actualizada.':'Tarea guardada.');}
+function deleteTask(id){const t=tasks.find(x=>x.id===id);if(!t)return;if(!confirm(`¿Eliminar la tarea “${t.title}”? No se puede deshacer.`))return;tasks=tasks.filter(x=>x.id!==id);save();closeModal('taskModal');render();toast('Tarea eliminada.');}
+function toggleComplete(id,checked){const t=tasks.find(x=>x.id===id);if(!t)return;t.status=checked?'Terminada':'Pendiente';t.completedAt=checked?new Date().toISOString():'';save();render();toast(checked?'¡Tarea terminada!':'Tarea reabierta.');}
+function openCategories(){renderCategoryManager();$('categoryModal').classList.add('show');}
+function renderCategoryManager(){$('categoryManager').innerHTML=categories.map((c,i)=>{const used=tasks.some(t=>t.category===c);return `<div class="category-edit"><span class="dot" style="background:${catColor(c)[1]}"></span><input value="${esc(c)}" maxlength="40" data-cat-index="${i}" aria-label="Nombre de categoría"><span class="help">${used?'En uso':''}</span><button class="btn btn-sm ${used?'':'btn-danger'}" data-remove-cat="${i}" ${used?'disabled title="En uso"':''}>Eliminar</button></div>`;}).join('');}
+function addCategory(){const input=$('newCategoryName'),name=input.value.trim();if(!name)return;if(categories.some(c=>c.toLocaleLowerCase('es-MX')===name.toLocaleLowerCase('es-MX'))){toast('Esa categoría ya existe.');return;}categories.push(name);input.value='';save();renderCategoryManager();render();toast('Categoría agregada.');}
+function openBackup(){const c=statusCounts();$('backupStats').textContent=`${tasks.length} tareas · ${categories.length} categorías · ${c.done} terminadas`;$('backupModal').classList.add('show');}
+function exportBackup(){const data={app:'Control de Tareas',version:1,exportedAt:new Date().toISOString(),tasks,categories};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`respaldo-control-tareas-${todayKey()}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('Respaldo descargado.');}
+function importBackup(file){if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!data||!Array.isArray(data.tasks)||!Array.isArray(data.categories))throw new Error('Formato inválido');if(!confirm(`Se importarán ${data.tasks.length} tareas. Los datos actuales serán reemplazados. ¿Continuar?`))return;tasks=data.tasks.map(normalizeTask);categories=[...new Set(data.categories.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()))];if(!categories.length)categories=[...DEFAULT_CATEGORIES];for(const t of tasks)if(!categories.includes(t.category))categories.push(t.category);save();closeModal('backupModal');render();toast('Respaldo importado.');}catch(e){alert('No se pudo importar. Verifica que sea un respaldo de Control de Tareas.');}};reader.readAsText(file);}
+
+function playBeep(){if(!soundEnabled)return;try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();[0,.22,.44].forEach((delay,i)=>{const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type='sine';osc.frequency.value=i===1?880:660;gain.gain.setValueAtTime(.0001,audioCtx.currentTime+delay);gain.gain.exponentialRampToValueAtTime(.18,audioCtx.currentTime+delay+.025);gain.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+delay+.16);osc.connect(gain);gain.connect(audioCtx.destination);osc.start(audioCtx.currentTime+delay);osc.stop(audioCtx.currentTime+delay+.18);});}catch(e){}}
+function checkReminders(){const now=Date.now();let due=[];tasks.forEach(t=>{if(isDone(t)||!t.reminder)return;const time=new Date(t.reminder).getTime();if(!Number.isFinite(time)||time>now||t.reminderDone===t.reminder)return;const key=t.id+'|'+t.reminder;if(!notified.has(key)){notified.add(key);due.push(t);t.reminderDone=t.reminder;}});if(due.length){save();$('alarmText').textContent=due.length===1?due[0].title:`Tienes ${due.length} tareas con recordatorio.`;$('alarmBanner').classList.add('show');playBeep();toast('Recordatorio: '+due[0].title);if('Notification'in window&&Notification.permission==='granted'){due.forEach(t=>{try{new Notification('Recordatorio de tarea',{body:t.title,tag:t.id});}catch(e){}});}renderReminders();}}
+
+function fmtThousands(raw){const d=String(raw).replace(/\D/g,'').replace(/^0+(?=\d)/,'');return d.replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+function saveIC(e){e.preventDefault();const raw=$('icNumber').value.replace(/\D/g,'');if(!raw){$('icNumber').focus();return;}const now=new Date().toISOString();tasks.push({id:uid(),title:'IC’S',description:'Número: '+fmtThousands(raw),priority:'Normal',status:'Pendiente',category:categories.includes('Producción')?'Producción':(categories[0]||'Sin categoría'),due:'',reminder:'',repeat:'none',createdAt:now,completedAt:'',notes:[],reminderDone:''});save();$('icNumber').value='';$('icNumber').focus();render();toast('Tarea IC’S guardada.');}
+function init(){load();$('todayLabel').textContent=new Intl.DateTimeFormat('es-MX',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).toLocaleUpperCase('es-MX');populateCategoryFilters();populateTaskCategories();setView('all');
+ $('searchInput').addEventListener('input',render);
+ $('categoryFilter').addEventListener('change',render);
+ $('clearFilters').addEventListener('click',()=>{$('searchInput').value='';$('categoryFilter').value='';activePriority='';document.querySelectorAll('[data-priority]').forEach(x=>x.classList.toggle('active',x.dataset.priority===''));setView('all');});
+ $('taskForm').addEventListener('submit',saveTask);
+ $('addNoteBtn').addEventListener('click',addNote);
+ $('newNote').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addNote();}});
+ $('deleteTaskBtn').addEventListener('click',()=>{if(editingId)deleteTask(editingId);});
+ $('addCategoryBtn').addEventListener('click',addCategory);
+ $('newCategoryName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addCategory();}});
+ $('importFile').addEventListener('change',e=>{importBackup(e.target.files[0]);e.target.value='';});
+ $('dismissAlarm').addEventListener('click',()=>$('alarmBanner').classList.remove('show'));
+ $('soundToggle').addEventListener('click',()=>{soundEnabled=!soundEnabled;$('soundToggle').textContent=soundEnabled?'🔔':'🔕';if(soundEnabled)playBeep();});
+ $('manageCategories').addEventListener('click',openCategories);
+ $('categoryManager').addEventListener('change',e=>{const input=e.target.closest('[data-cat-index]');if(!input)return;const i=Number(input.dataset.catIndex),oldName=categories[i],newName=input.value.trim();if(!newName){input.value=oldName;return;}if(categories.some((c,j)=>j!==i&&c.toLocaleLowerCase('es-MX')===newName.toLocaleLowerCase('es-MX'))){toast('Ya existe una categoría con ese nombre.');input.value=oldName;return;}categories[i]=newName;tasks.forEach(t=>{if(t.category===oldName)t.category=newName;});save();renderCategoryManager();render();toast('Categoría actualizada.');});
+
+ document.body.addEventListener('click',e=>{
+  const q=sel=>e.target.closest(sel);
+  const edit=q('[data-edit]'),del=q('[data-delete]'),check=q('[data-complete]'),close=q('[data-close]'),remove=q('[data-remove-cat]'),tpl=q('[data-template]'),pri=q('[data-priority]'),view=q('[data-view]'),cal=q('[data-cal]'),act=q('[data-action]');
+  if(edit){openTask(edit.dataset.edit);return;}
+  if(del){deleteTask(del.dataset.delete);return;}
+  if(check){toggleComplete(check.dataset.complete,check.checked);return;}
+  if(close){closeModal(close.dataset.close);return;}
+  if(remove){const i=Number(remove.dataset.removeCat),cat=categories[i];if(cat&&!tasks.some(t=>t.category===cat)){categories.splice(i,1);save();renderCategoryManager();render();}return;}
+  
+  if(pri){activePriority=pri.dataset.priority;document.querySelectorAll('[data-priority]').forEach(x=>x.classList.toggle('active',x===pri));render();return;}
+  if(view){setView(view.dataset.view);return;}
+  if(cal){calOffset+=Number(cal.dataset.cal);renderCalendar();return;}
+  if(act){const a=act.dataset.action;if(a==='new')openTask();else if(a==='categories')openCategories();else if(a==='backup')openBackup();else if(a==='export')exportBackup();else if(a==='import')$('importFile').click();}
+ });
+ document.querySelectorAll('.modal-backdrop').forEach(back=>back.addEventListener('click',e=>{if(e.target===back)back.classList.remove('show');}));
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-backdrop.show').forEach(m=>m.classList.remove('show'));if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('searchInput').focus();}});
+ $('icNumber').addEventListener('input',e=>{e.target.value=fmtThousands(e.target.value);});
+ $('icForm').addEventListener('submit',saveIC);
+ setInterval(checkReminders,15000);checkReminders();
+}
+init();
+})();
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
